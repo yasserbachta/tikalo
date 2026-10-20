@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billets — Timeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --brand:#3730a3;     /* main — change me */
+  --brand-2:#2a247c;
+  --tint:#eceafb;
+  --ink:#1a1c2e;
+  --muted:#666b85;
+  --line:#e1e3ee;
+  --paper:#ffffff;
+  --bg:#eceef4;
+}
+
+@page{ size:A4 portrait; margin:0; }
+@media print{
+  html,body{ background:#fff !important; }
+  .toolbar,.tab-bar{ display:none !important; }
+  .panel{ display:none !important; }
+  .panel.active{ display:block !important; }
+  .content{ padding:0 !important; }
+  .sheet{ box-shadow:none !important; border-radius:0 !important; width:210mm !important; min-height:297mm !important; margin:0 !important; }
+  .node,.leg,.summary,.foot{ page-break-inside:avoid; }
+}
+
+body{ background:var(--bg); font-family:'Work Sans',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+.toolbar{ background:var(--brand-2); color:#fff; padding:14px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.toolbar .ttl{ font-weight:800; font-size:15px; }
+.toolbar .ttl small{ display:block; font-weight:500; font-size:9px; letter-spacing:.2em; text-transform:uppercase; opacity:.7; margin-top:3px; }
+.tools{ display:flex; align-items:center; gap:16px; }
+.swatches{ display:flex; gap:7px; }
+.sw{ width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid rgba(255,255,255,.5); }
+.printb{ background:#fff; color:var(--brand-2); border:none; border-radius:6px; padding:9px 18px; font-family:inherit; font-weight:700; font-size:11px; cursor:pointer; }
+
+.tab-bar{ background:#fff; border-bottom:1px solid var(--line); display:flex; padding:0 28px; flex-wrap:wrap; }
+.tab{ padding:13px 16px; font-size:11px; font-weight:700; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+.tab:hover{ color:var(--brand); }
+.tab.active{ color:var(--brand); border-bottom-color:var(--brand); }
+
+.content{ padding:34px 20px 60px; }
+.panel{ display:none; } .panel.active{ display:block; }
+
+.sheet{ background:var(--paper); max-width:760px; margin:0 auto; box-shadow:0 10px 46px rgba(55,48,163,.16); border-radius:14px; overflow:hidden; display:flex; }
+/* left rail */
+.side{ width:60px; flex-shrink:0; background:var(--brand); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:22px 0; }
+.side .mk svg{ width:26px; height:26px; }
+.side .vert{ writing-mode:vertical-rl; transform:rotate(180deg); font-size:10px; font-weight:700; letter-spacing:.34em; text-transform:uppercase; opacity:.9; }
+.side .pnr{ writing-mode:vertical-rl; transform:rotate(180deg); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; }
+.body{ flex:1; min-width:0; }
+
+/* header */
+.head{ padding:24px 32px 18px; display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid var(--line); }
+.head .n{ font-size:16px; font-weight:800; }
+.head .s{ font-size:9px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+.head-r{ text-align:right; }
+.chip{ display:inline-block; background:var(--tint); color:var(--brand); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:5px 12px; border-radius:20px; }
+.head-r .ty{ font-size:18px; font-weight:800; margin-top:8px; }
+
+/* pax */
+.pax{ padding:16px 32px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--tint); }
+.f .k{ font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.f .v{ font-size:14px; font-weight:700; }
+.f .v.big{ font-size:18px; font-weight:800; }
+.f .v.mono{ font-family:'IBM Plex Mono',monospace; font-weight:600; }
+
+/* pax table */
+.paxtab{ padding:14px 32px; background:var(--tint); }
+.paxtab .cap{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+.paxtab .cap .k{ font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.pbadge{ background:var(--brand); color:#fff; font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:20px; }
+.paxtab .row{ display:grid; grid-template-columns:2fr 1.6fr 1.3fr; gap:14px; padding:7px 0; align-items:center; }
+.paxtab .row.hd{ font-size:7.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.paxtab .row+.row.bd{ border-top:1px solid #d7d9e8; }
+.paxtab .nm{ font-size:14px; font-weight:800; }
+.paxtab .vv{ font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; }
+.paxtab .vv.txt{ font-family:'Work Sans'; }
+
+/* TIMELINE */
+.tl{ position:relative; padding:22px 32px 8px 56px; }
+.tl::before{ content:''; position:absolute; left:30px; top:30px; bottom:14px; width:2px; background:var(--line); }
+.node{ position:relative; padding:6px 0; }
+.node .dot{ position:absolute; left:-26px; top:5px; width:16px; height:16px; border-radius:50%; background:var(--brand); border:3px solid var(--paper); box-shadow:0 0 0 2px var(--brand); }
+.node .top{ display:flex; align-items:baseline; gap:10px; }
+.node .city{ font-size:17px; font-weight:800; }
+.node .iata{ font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:var(--brand); background:var(--tint); padding:2px 7px; border-radius:5px; }
+.node .time{ margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:600; }
+.node .sub{ font-size:10px; color:var(--muted); margin-top:3px; }
+
+.leg{ position:relative; padding:4px 0 4px 0; }
+.legcard{ border:1.5px solid var(--line); border-radius:12px; padding:12px 16px; margin:4px 0; }
+.legdur{ display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; color:var(--brand); margin-bottom:10px; }
+.legdur svg{ width:15px; height:15px; }
+.leggrid{ display:flex; flex-wrap:wrap; gap:10px 0; }
+.lc{ flex:1; min-width:78px; }
+.lc .k{ font-size:7.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:3px; }
+.lc .v{ font-size:12px; font-weight:700; }
+.lc .v.mono{ font-family:'IBM Plex Mono',monospace; font-weight:600; }
+.cbadge{ display:inline-block; background:var(--brand); color:#fff; font-size:7px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; border-radius:5px; margin-top:3px; }
+
+.wait{ position:relative; padding:3px 0; }
+.wait .dot{ position:absolute; left:-23px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--paper); border:2px dashed var(--brand); }
+.wait .txt{ font-size:10.5px; color:var(--muted); font-style:italic; }
+.wait .txt b{ color:var(--brand); font-style:normal; font-family:'IBM Plex Mono',monospace; }
+
+.extra{ margin:0 32px; border:1.5px solid var(--line); border-radius:12px; padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px 0; }
+
+/* summary */
+.summary{ margin:18px 32px; background:var(--brand); color:#fff; border-radius:12px; padding:18px 22px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+.summary .k{ font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.6); margin-bottom:4px; }
+.summary .v{ font-size:14px; font-weight:700; }
+.summary .v.mono{ font-family:'IBM Plex Mono',monospace; }
+.summary .v.price{ font-size:20px; font-weight:800; }
+
+.foot{ background:var(--tint); padding:18px 32px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+.foot .n{ font-size:12px; font-weight:800; }
+.foot .a{ font-size:9.5px; color:var(--muted); margin-top:4px; line-height:1.6; }
+.cts{ text-align:right; display:flex; flex-direction:column; gap:4px; }
+.ct{ font-size:9.5px; color:var(--muted); display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+.ct svg{ width:11px; height:11px; color:var(--brand); }
+.ct b{ color:var(--ink); font-weight:600; }
+.gen{ font-size:8px; color:var(--muted); text-align:center; padding:9px 32px 14px; }
+.spacer{ height:30px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="ttl">Mise à Jour Voyage <small>Agence de Voyages — Draria, Alger</small></div>
+  <div class="tools">
+    <div class="swatches">
+      <span class="sw" style="background:#3730a3" onclick="theme('#3730a3','#2a247c','#eceafb')"></span>
+      <span class="sw" style="background:#0e7490" onclick="theme('#0e7490','#0a5870','#e2f2f6')"></span>
+      <span class="sw" style="background:#be123c" onclick="theme('#be123c','#990e30','#fbe7ec')"></span>
+      <span class="sw" style="background:#15803d" onclick="theme('#15803d','#10602e','#e5f3ea')"></span>
+      <span class="sw" style="background:#c2410c" onclick="theme('#c2410c','#9a3409','#fbece2')"></span>
+    </div>
+    <button class="printb" onclick="window.print()">⬇ Imprimer / PDF</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="sw('simple',this)">Aller Simple</div>
+  <div class="tab" onclick="sw('retour',this)">Aller-Retour</div>
+  <div class="tab" onclick="sw('escale',this)">Multi-Escale</div>
+  <div class="tab" onclick="sw('maritime',this)">Maritime</div>
+  <div class="tab" onclick="sw('multi',this)">2 Passagers</div>
+</div>
+
+<div class="content">
+
+<!-- 1. ALLER SIMPLE -->
+<div class="panel active" id="p-simple">
+  <div class="sheet">
+    <div class="side">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div>
+      <div class="vert">Billet Électronique</div>
+      <div class="pnr">YZD4CK</div>
+    </div>
+    <div class="body">
+      <div class="head"><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div><div class="head-r"><span class="chip">Billet Électronique</span><div class="ty">Aller Simple</div></div></div>
+      <div class="pax">
+        <div class="f"><div class="k">Passager</div><div class="v big">Feddal Samia</div></div>
+        <div class="f"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="f"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">09:45</span></div><div class="sub">Algiers · Houari Boumédiène · Départ 28 Avr 2026</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 5h 35min · Vol direct</div><div class="leggrid"><div class="lc"><div class="k">Compagnie</div><div class="v">Air Algérie</div></div><div class="lc"><div class="k">Vol</div><div class="v mono">AH 3016</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Istanbul</span><span class="iata">IST</span><span class="time">15:20</span></div><div class="sub">Istanbul Airport · Arrivée 28 Avr 2026</div></div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="summary">
+        <div><div class="k">Référence (PNR)</div><div class="v mono">YZD4CK</div></div>
+        <div><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+        <div><div class="k">Prix Total</div><div class="v price">28 000 DZD</div></div>
+      </div>
+      <div class="foot">
+        <div><div class="n">Mise à Jour Voyage</div><div class="a">Lotissement Ben Ramdhane, Ilot 06<br>Chemin des Crêtes — Draria</div></div>
+        <div class="cts">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15 15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/></svg><b>0777 777 725</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><b>miseajourvoyage@gmail.com</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg><b>www.miseajourvoyage.com</b></div>
+        </div>
+      </div>
+      <div class="gen">Généré le 30 Avr 2026 — Confirmation électronique. Veuillez présenter ce document lors de l'enregistrement.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. ALLER-RETOUR -->
+<div class="panel" id="p-retour">
+  <div class="sheet">
+    <div class="side">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div>
+      <div class="vert">Billet Électronique</div>
+      <div class="pnr">YZD4CK</div>
+    </div>
+    <div class="body">
+      <div class="head"><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div><div class="head-r"><span class="chip">Billet Électronique</span><div class="ty">Aller-Retour</div></div></div>
+      <div class="pax">
+        <div class="f"><div class="k">Passager</div><div class="v big">Feddal Samia</div></div>
+        <div class="f"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="f"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">09:45</span></div><div class="sub">H. Boumédiène · Aller · 28 Avr 2026</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 5h 35min · Air Algérie</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AH 3016</div></div><div class="lc"><div class="k">Date</div><div class="v">28 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Istanbul</span><span class="iata">IST</span><span class="time">15:20</span></div><div class="sub">Istanbul Airport · Arrivée</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 1h 30min · Air Algérie · Retour</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AH 3015</div></div><div class="lc"><div class="k">Date</div><div class="v">30 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">03:10</span></div><div class="sub">H. Boumédiène · Retour · 30 Avr 2026</div></div>
+      </div>
+
+      <div class="summary">
+        <div><div class="k">Référence (PNR)</div><div class="v mono">YZD4CK</div></div>
+        <div><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+        <div><div class="k">Prix Total</div><div class="v price">48 000 DZD</div></div>
+      </div>
+      <div class="foot">
+        <div><div class="n">Mise à Jour Voyage</div><div class="a">Lotissement Ben Ramdhane, Ilot 06<br>Chemin des Crêtes — Draria</div></div>
+        <div class="cts">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15 15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/></svg><b>0777 777 725</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><b>miseajourvoyage@gmail.com</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg><b>www.miseajourvoyage.com</b></div>
+        </div>
+      </div>
+      <div class="gen">Généré le 30 Avr 2026 — Confirmation électronique. Veuillez présenter ce document lors de l'enregistrement.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. MULTI-ESCALE -->
+<div class="panel" id="p-escale">
+  <div class="sheet">
+    <div class="side">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div>
+      <div class="vert">Billet Électronique</div>
+      <div class="pnr">MXJ9TA</div>
+    </div>
+    <div class="body">
+      <div class="head"><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div><div class="head-r"><span class="chip">Billet Électronique</span><div class="ty">Multi-Escale</div></div></div>
+      <div class="pax">
+        <div class="f"><div class="k">Passager</div><div class="v big">Feddal Samia</div></div>
+        <div class="f"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="f"><div class="k">Durée totale</div><div class="v">17h 50min</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">07:00</span></div><div class="sub">H. Boumédiène · Départ</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 2h 45min · Air Algérie</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AH 1020</div></div><div class="lc"><div class="k">Date</div><div class="v">28 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Paris</span><span class="iata">CDG</span><span class="time">09:45</span></div><div class="sub">Charles de Gaulle</div></div>
+        <div class="wait"><span class="dot"></span><div class="txt">Escale à Paris (CDG) — attente <b>3h 20min</b></div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 3h 55min · Air France</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AF 1820</div></div><div class="lc"><div class="k">Date</div><div class="v">28 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Istanbul</span><span class="iata">IST</span><span class="time">17:00</span></div><div class="sub">Istanbul Airport</div></div>
+        <div class="wait"><span class="dot"></span><div class="txt">Escale à Istanbul (IST) — attente <b>5h 40min</b></div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 2h 10min · Turkish Airlines</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">TK 0766</div></div><div class="lc"><div class="k">Date</div><div class="v">28 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Le Caire</span><span class="iata">CAI</span><span class="time">00:50<sup>+1</sup></span></div><div class="sub">Int'l Airport · Arrivée</div></div>
+      </div>
+
+      <div class="summary">
+        <div><div class="k">Référence (PNR)</div><div class="v mono">MXJ9TA</div></div>
+        <div><div class="k">Durée Totale</div><div class="v">17h 50min</div></div>
+        <div><div class="k">Prix Total</div><div class="v price">72 000 DZD</div></div>
+      </div>
+      <div class="foot">
+        <div><div class="n">Mise à Jour Voyage</div><div class="a">Lotissement Ben Ramdhane, Ilot 06<br>Chemin des Crêtes — Draria</div></div>
+        <div class="cts">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15 15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/></svg><b>0777 777 725</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><b>miseajourvoyage@gmail.com</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg><b>www.miseajourvoyage.com</b></div>
+        </div>
+      </div>
+      <div class="gen">Généré le 30 Avr 2026 — Confirmation électronique. Veuillez présenter ce document lors de l'enregistrement.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. MARITIME -->
+<div class="panel" id="p-maritime">
+  <div class="sheet">
+    <div class="side">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div>
+      <div class="vert">Traversée Maritime</div>
+      <div class="pnr">SEA4XK</div>
+    </div>
+    <div class="body">
+      <div class="head"><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div><div class="head-r"><span class="chip">Billet Électronique</span><div class="ty">Maritime</div></div></div>
+      <div class="pax">
+        <div class="f"><div class="k">Passager</div><div class="v big">Feddal Samia</div></div>
+        <div class="f"><div class="k">Billet No.</div><div class="v mono">MAR-7734291085</div></div>
+        <div class="f"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">PORT</span><span class="time">18:00</span></div><div class="sub">Port d'Alger · Embarquement 28 Avr 2026</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M5 16l2-7h10l2 7M9 9V6h6v3M11 6V4h2v2"/></svg> 20h 00min · Algérie Ferries</div><div class="leggrid"><div class="lc"><div class="k">Navire</div><div class="v">Djazaïr II</div></div><div class="lc"><div class="k">Classe</div><div class="v">Cabine 2 p.<span class="cbadge">Confort</span></div></div><div class="lc"><div class="k">Repas</div><div class="v">Demi-pension</div></div><div class="lc"><div class="k">Bagages</div><div class="v">40 kg/p.</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Marseille</span><span class="iata">PORT</span><span class="time">14:00<sup>+1</sup></span></div><div class="sub">Port de Marseille · Arrivée</div></div>
+      </div>
+      <div class="extra">
+        <div class="lc"><div class="k">Numéro de cabine</div><div class="v mono">C-214</div></div>
+        <div class="lc"><div class="k">Pont</div><div class="v">Pont 4 — Supérieur</div></div>
+        <div class="lc"><div class="k">Repas inclus</div><div class="v">Demi-pension</div></div>
+        <div class="lc"><div class="k">Véhicule</div><div class="v">Sans véhicule</div></div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="summary">
+        <div><div class="k">Référence (PNR)</div><div class="v mono">SEA4XK</div></div>
+        <div><div class="k">Durée Traversée</div><div class="v">20h 00min</div></div>
+        <div><div class="k">Prix Total</div><div class="v price">18 500 DZD</div></div>
+      </div>
+      <div class="foot">
+        <div><div class="n">Mise à Jour Voyage</div><div class="a">Lotissement Ben Ramdhane, Ilot 06<br>Chemin des Crêtes — Draria</div></div>
+        <div class="cts">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15 15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/></svg><b>0777 777 725</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><b>miseajourvoyage@gmail.com</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg><b>www.miseajourvoyage.com</b></div>
+        </div>
+      </div>
+      <div class="gen">Généré le 30 Avr 2026 — Confirmation électronique. Veuillez présenter ce document lors de l'embarquement au port.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. 2 PASSAGERS -->
+<div class="panel" id="p-multi">
+  <div class="sheet">
+    <div class="side">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div>
+      <div class="vert">Billet Électronique</div>
+      <div class="pnr">YZD4CK</div>
+    </div>
+    <div class="body">
+      <div class="head"><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div><div class="head-r"><span class="chip">Billet Électronique</span><div class="ty">Aller-Retour</div></div></div>
+      <div class="paxtab">
+        <div class="cap"><div class="k">Passagers</div><span class="pbadge">2 Voyageurs</span></div>
+        <div class="row hd"><div>Nom</div><div>Billet No.</div><div>Compagnie</div></div>
+        <div class="row bd"><div class="nm">M. Mohamed Titi</div><div class="vv">124-2444383253</div><div class="vv txt">Air Algérie</div></div>
+        <div class="row bd"><div class="nm">Mme Fatiha Djaafri</div><div class="vv">124-2444383252</div><div class="vv txt">Air Algérie</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">09:45</span></div><div class="sub">H. Boumédiène · Aller · 28 Avr 2026</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 5h 35min · 2 adultes</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AH 3016</div></div><div class="lc"><div class="k">Date</div><div class="v">28 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC/p.</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Istanbul</span><span class="iata">IST</span><span class="time">15:20</span></div><div class="sub">Istanbul Airport</div></div>
+        <div class="leg"><div class="legcard"><div class="legdur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg> 1h 30min · Retour · 2 adultes</div><div class="leggrid"><div class="lc"><div class="k">Vol</div><div class="v mono">AH 3015</div></div><div class="lc"><div class="k">Date</div><div class="v">30 Avr 2026</div></div><div class="lc"><div class="k">Cabine</div><div class="v">Economy</div></div><div class="lc"><div class="k">Bagages</div><div class="v">2 PC/p.</div></div></div></div></div>
+        <div class="node"><span class="dot"></span><div class="top"><span class="city">Alger</span><span class="iata">ALG</span><span class="time">03:10</span></div><div class="sub">H. Boumédiène · Retour · 30 Avr 2026</div></div>
+      </div>
+
+      <div class="summary">
+        <div><div class="k">Référence (PNR)</div><div class="v mono">YZD4CK</div></div>
+        <div><div class="k">Prix / Passager</div><div class="v">48 000 DZD</div></div>
+        <div><div class="k">Prix Total (×2)</div><div class="v price">96 000 DZD</div></div>
+      </div>
+      <div class="foot">
+        <div><div class="n">Mise à Jour Voyage</div><div class="a">Lotissement Ben Ramdhane, Ilot 06<br>Chemin des Crêtes — Draria</div></div>
+        <div class="cts">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15 15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/></svg><b>0777 777 725</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><b>miseajourvoyage@gmail.com</b></div>
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg><b>www.miseajourvoyage.com</b></div>
+        </div>
+      </div>
+      <div class="gen">Généré le 30 Avr 2026 — Confirmation électronique. Veuillez présenter ce document lors de l'enregistrement.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function sw(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('p-'+id).classList.add('active');
+}
+function theme(c1,c2,tint){
+  const r=document.documentElement.style;
+  r.setProperty('--brand',c1); r.setProperty('--brand-2',c2); r.setProperty('--tint',tint);
+}
+</script>
+</body>
+</html>

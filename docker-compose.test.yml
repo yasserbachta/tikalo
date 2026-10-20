@@ -1,0 +1,32 @@
+# Disposable Postgres for the integration test suite ONLY.
+#
+# Nothing here touches the real Supabase database. This is an ephemeral,
+# throwaway container: its data lives in tmpfs and is wiped on every
+# `docker compose down`. The integration suite resets the schema with
+# `prisma db push --force-reset` on each run, so treat this DB as disposable.
+#
+#   npm run test:db:up     # start (waits for healthcheck)
+#   npm run test:db:down   # stop and delete the volume
+#
+# Host port 5433 is used on purpose, to avoid clashing with a local Postgres
+# (or a Supabase CLI stack) already bound to 5432.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: tikalo_test_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tikalo_test
+    ports:
+      - "5433:5432"
+    # Keep the data directory in memory so each run starts from a clean slate
+    # and nothing is ever persisted to disk.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tikalo_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billets — Wallet Pass</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --brand:#8a1c3b;     /* main — change me */
+  --brand-2:#6d1530;
+  --on:#ffffff;
+  --ink:#241a1e;
+  --muted:#7a6e72;
+  --line:#e7e1e3;
+  --soft:#f6f1f2;
+  --bg:#e9e4e6;
+}
+
+@page{ size:A4 portrait; margin:0; }
+@media print{
+  html,body{ background:#fff !important; }
+  .toolbar,.tab-bar{ display:none !important; }
+  .panel{ display:none !important; }
+  .panel.active{ display:block !important; }
+  .content{ padding:0 !important; }
+  .passwrap{ min-height:297mm; padding-top:24mm !important; }
+  .pass{ box-shadow:none !important; border:1px solid var(--line); }
+  .cut{ background:#fff !important; }
+  .pass{ page-break-inside:avoid; }
+}
+
+body{ background:var(--bg); font-family:'Outfit',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+.toolbar{ background:var(--brand-2); color:#fff; padding:14px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.toolbar .ttl{ font-weight:700; font-size:15px; }
+.toolbar .ttl small{ display:block; font-weight:400; font-size:9px; letter-spacing:.2em; text-transform:uppercase; opacity:.75; margin-top:3px; }
+.tools{ display:flex; align-items:center; gap:16px; }
+.swatches{ display:flex; gap:7px; }
+.sw{ width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid rgba(255,255,255,.5); }
+.printb{ background:#fff; color:var(--brand-2); border:none; border-radius:8px; padding:9px 18px; font-family:inherit; font-weight:700; font-size:11px; cursor:pointer; }
+
+.tab-bar{ background:#fff; border-bottom:1px solid var(--line); display:flex; padding:0 26px; flex-wrap:wrap; }
+.tab{ padding:14px 16px; font-size:11px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2.5px solid transparent; }
+.tab:hover{ color:var(--brand); }
+.tab.active{ color:var(--brand); border-bottom-color:var(--brand); }
+
+.content{ padding:36px 20px 60px; }
+.panel{ display:none; } .panel.active{ display:block; }
+
+.passwrap{ display:flex; justify-content:center; }
+
+/* PASS CARD */
+.pass{ width:452px; max-width:100%; background:#fff; border-radius:28px; overflow:hidden; box-shadow:0 18px 50px rgba(70,20,40,.22); }
+
+/* top (brand) */
+.ptop{ background:var(--brand); color:var(--on); padding:22px 26px 22px; position:relative; }
+.pbar{ display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1; }
+.plogo{ display:flex; align-items:center; gap:11px; }
+.plogo .mk{ width:38px; height:38px; border-radius:11px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; }
+.plogo .mk svg{ width:22px; height:22px; }
+.plogo .n{ font-size:14px; font-weight:700; }
+.plogo .s{ font-size:8px; font-weight:500; letter-spacing:.18em; text-transform:uppercase; opacity:.8; margin-top:2px; }
+.ptype{ font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:rgba(255,255,255,.18); padding:6px 12px; border-radius:20px; }
+
+/* big route (single segment) */
+.proute{ display:flex; align-items:center; gap:14px; margin-top:22px; position:relative; z-index:1; }
+.pe{ flex:0 0 auto; }
+.pe.r{ text-align:right; margin-left:auto; }
+.pcity{ font-family:'DM Mono',monospace; font-size:34px; font-weight:500; line-height:1; letter-spacing:.02em; }
+.ptm{ font-size:16px; font-weight:700; margin-top:8px; }
+.pap{ font-size:9.5px; opacity:.8; margin-top:3px; }
+.pmid{ flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; }
+.pmid .pdur{ font-size:9.5px; font-weight:600; opacity:.9; }
+.pmid .pl{ width:100%; display:flex; align-items:center; }
+.pmid .pl .b{ flex:1; height:1.5px; background:repeating-linear-gradient(90deg,rgba(255,255,255,.7) 0 4px,transparent 4px 8px); }
+.pmid .pl svg{ width:18px; height:18px; margin:0 6px; }
+
+/* stacked legs (multi-segment) */
+.plegs{ margin-top:20px; position:relative; z-index:1; }
+.pleg{ padding:11px 0; }
+.pleg + .pleg{ border-top:1px dashed rgba(255,255,255,.28); }
+.pleg .ends{ display:flex; align-items:baseline; gap:8px; font-family:'DM Mono',monospace; }
+.pleg .ends b{ font-size:17px; font-weight:500; }
+.pleg .ends span{ font-size:12px; opacity:.9; }
+.pleg .ends i{ font-style:normal; opacity:.65; margin:0 2px; }
+.pleg .meta{ font-size:9.5px; opacity:.82; margin-top:4px; letter-spacing:.02em; }
+.pleg .wait{ font-size:9px; opacity:.7; font-style:italic; margin-top:3px; }
+
+/* perforation */
+.perf{ position:relative; height:0; }
+.cut{ position:absolute; top:-13px; width:26px; height:26px; border-radius:50%; background:var(--bg); }
+.cut.l{ left:-13px; } .cut.r{ right:-13px; }
+.dash{ position:absolute; top:-1px; left:20px; right:20px; border-top:2px dashed var(--line); }
+
+/* body (white) */
+.pbody{ padding:26px 26px 22px; }
+.pfields{ display:grid; grid-template-columns:1fr 1fr; gap:15px 18px; }
+.fld.full{ grid-column:1 / -1; }
+.fld .k{ font-size:8px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.fld .v{ font-size:14px; font-weight:600; }
+.fld .v.mono{ font-family:'DM Mono',monospace; font-size:13px; font-weight:500; }
+.cbadge{ display:inline-block; background:var(--brand); color:var(--on); font-size:7.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:6px; margin-left:5px; }
+
+.pqr{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-top:22px; padding-top:18px; border-top:1px dashed var(--line); }
+.pqr .k{ font-size:8px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+.pqr .pnr{ font-family:'DM Mono',monospace; font-size:24px; font-weight:500; letter-spacing:.08em; }
+.pqr .pright{ text-align:right; }
+.pqr .price{ font-size:26px; font-weight:800; color:var(--brand); }
+
+/* foot */
+.pfoot{ background:var(--soft); padding:16px 26px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; }
+.pfoot .n{ font-size:11px; font-weight:700; }
+.pfoot .a{ font-size:9px; color:var(--muted); margin-top:3px; line-height:1.5; }
+.pfoot .cts{ text-align:right; display:flex; flex-direction:column; gap:3px; }
+.pfoot .ct{ font-size:9px; color:var(--muted); }
+.pfoot .ct b{ color:var(--ink); font-weight:600; }
+.pgen{ text-align:center; font-size:8px; color:var(--muted); padding:10px 26px 16px; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="ttl">Mise à Jour Voyage <small>Agence de Voyages — Draria, Alger</small></div>
+  <div class="tools">
+    <div class="swatches">
+      <span class="sw" style="background:#8a1c3b" onclick="theme('#8a1c3b','#6d1530')"></span>
+      <span class="sw" style="background:#1e3a8a" onclick="theme('#1e3a8a','#162c69')"></span>
+      <span class="sw" style="background:#0f766e" onclick="theme('#0f766e','#0a574f')"></span>
+      <span class="sw" style="background:#7c2d12" onclick="theme('#7c2d12','#5c1f0c')"></span>
+      <span class="sw" style="background:#1f2937" onclick="theme('#1f2937','#111827')"></span>
+    </div>
+    <button class="printb" onclick="window.print()">⬇ Imprimer / PDF</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="sw('simple',this)">Aller Simple</div>
+  <div class="tab" onclick="sw('retour',this)">Aller-Retour</div>
+  <div class="tab" onclick="sw('escale',this)">Multi-Escale</div>
+  <div class="tab" onclick="sw('maritime',this)">Maritime</div>
+  <div class="tab" onclick="sw('multi',this)">2 Passagers</div>
+</div>
+
+<div class="content">
+
+<!-- 1. ALLER SIMPLE -->
+<div class="panel active" id="p-simple">
+  <div class="passwrap"><div class="pass">
+    <div class="ptop">
+      <div class="pbar">
+        <div class="plogo"><div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div></div>
+        <div class="ptype">Aller Simple</div>
+      </div>
+      <div class="proute">
+        <div class="pe"><div class="pcity">ALG</div><div class="ptm">09:45</div><div class="pap">Alger</div></div>
+        <div class="pmid"><div class="pdur">5h 35min</div><div class="pl"><div class="b"></div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg><div class="b"></div></div><div class="pap" style="opacity:.75">Vol direct</div></div>
+        <div class="pe r"><div class="pcity">IST</div><div class="ptm">15:20</div><div class="pap">Istanbul</div></div>
+      </div>
+    </div>
+    <div class="perf"><span class="cut l"></span><span class="dash"></span><span class="cut r"></span></div>
+    <div class="pbody">
+      <div class="pfields">
+        <div class="fld full"><div class="k">Passager</div><div class="v">Feddal Samia</div></div>
+        <div class="fld"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="fld"><div class="k">Vol</div><div class="v">Air Algérie · AH 3016</div></div>
+        <div class="fld"><div class="k">Date</div><div class="v">28 Avr 2026</div></div>
+        <div class="fld"><div class="k">Cabine</div><div class="v">Economy</div></div>
+        <div class="fld"><div class="k">Bagages</div><div class="v">2 PC</div></div>
+        <div class="fld"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+      <div class="pqr">
+        <div><div class="k">Référence (PNR)</div><div class="pnr">YZD4CK</div></div>
+        <div class="pright"><div class="k">Prix total</div><div class="price">28 000 DZD</div></div>
+      </div>
+    </div>
+    <div class="pfoot">
+      <div><div class="n">Mise à Jour Voyage</div><div class="a">Ilot 06, Ben Ramdhane — Draria, Alger</div></div>
+      <div class="cts"><div class="ct"><b>0777 777 725</b></div><div class="ct">miseajourvoyage@gmail.com</div><div class="ct">www.miseajourvoyage.com</div></div>
+    </div>
+    <div class="pgen">Généré le 30 Avr 2026 — Confirmation électronique.</div>
+  </div></div>
+</div>
+
+<!-- 2. ALLER-RETOUR -->
+<div class="panel" id="p-retour">
+  <div class="passwrap"><div class="pass">
+    <div class="ptop">
+      <div class="pbar">
+        <div class="plogo"><div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div></div>
+        <div class="ptype">Aller-Retour</div>
+      </div>
+      <div class="plegs">
+        <div class="pleg"><div class="ends"><b>ALG</b><span>09:45</span><i>→</i><b>IST</b><span>15:20</span></div><div class="meta">Aller · 28 Avr · Air Algérie AH 3016 · 5h 35min</div></div>
+        <div class="pleg"><div class="ends"><b>IST</b><span>01:40</span><i>→</i><b>ALG</b><span>03:10</span></div><div class="meta">Retour · 30 Avr · Air Algérie AH 3015 · 1h 30min</div></div>
+      </div>
+    </div>
+    <div class="perf"><span class="cut l"></span><span class="dash"></span><span class="cut r"></span></div>
+    <div class="pbody">
+      <div class="pfields">
+        <div class="fld full"><div class="k">Passager</div><div class="v">Feddal Samia</div></div>
+        <div class="fld"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="fld"><div class="k">Cabine</div><div class="v">Economy</div></div>
+        <div class="fld"><div class="k">Bagages</div><div class="v">2 PC</div></div>
+        <div class="fld"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+      <div class="pqr">
+        <div><div class="k">Référence (PNR)</div><div class="pnr">YZD4CK</div></div>
+        <div class="pright"><div class="k">Prix total</div><div class="price">48 000 DZD</div></div>
+      </div>
+    </div>
+    <div class="pfoot">
+      <div><div class="n">Mise à Jour Voyage</div><div class="a">Ilot 06, Ben Ramdhane — Draria, Alger</div></div>
+      <div class="cts"><div class="ct"><b>0777 777 725</b></div><div class="ct">miseajourvoyage@gmail.com</div><div class="ct">www.miseajourvoyage.com</div></div>
+    </div>
+    <div class="pgen">Généré le 30 Avr 2026 — Confirmation électronique.</div>
+  </div></div>
+</div>
+
+<!-- 3. MULTI-ESCALE -->
+<div class="panel" id="p-escale">
+  <div class="passwrap"><div class="pass">
+    <div class="ptop">
+      <div class="pbar">
+        <div class="plogo"><div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div></div>
+        <div class="ptype">Multi-Escale</div>
+      </div>
+      <div class="plegs">
+        <div class="pleg"><div class="ends"><b>ALG</b><span>07:00</span><i>→</i><b>CDG</b><span>09:45</span></div><div class="meta">Vol 1/3 · Air Algérie AH 1020 · 2h 45min</div><div class="wait">Escale Paris (CDG) — attente 3h 20min</div></div>
+        <div class="pleg"><div class="ends"><b>CDG</b><span>13:05</span><i>→</i><b>IST</b><span>17:00</span></div><div class="meta">Vol 2/3 · Air France AF 1820 · 3h 55min</div><div class="wait">Escale Istanbul (IST) — attente 5h 40min</div></div>
+        <div class="pleg"><div class="ends"><b>IST</b><span>22:40</span><i>→</i><b>CAI</b><span>00:50<sup>+1</sup></span></div><div class="meta">Vol 3/3 · Turkish Airlines TK 0766 · 2h 10min</div></div>
+      </div>
+    </div>
+    <div class="perf"><span class="cut l"></span><span class="dash"></span><span class="cut r"></span></div>
+    <div class="pbody">
+      <div class="pfields">
+        <div class="fld full"><div class="k">Passager</div><div class="v">Feddal Samia</div></div>
+        <div class="fld"><div class="k">Billet No.</div><div class="v mono">124-2443317766</div></div>
+        <div class="fld"><div class="k">Itinéraire</div><div class="v">ALG·CDG·IST·CAI</div></div>
+        <div class="fld"><div class="k">Cabine</div><div class="v">Economy</div></div>
+        <div class="fld"><div class="k">Durée totale</div><div class="v">17h 50min</div></div>
+      </div>
+      <div class="pqr">
+        <div><div class="k">Référence (PNR)</div><div class="pnr">MXJ9TA</div></div>
+        <div class="pright"><div class="k">Prix total</div><div class="price">72 000 DZD</div></div>
+      </div>
+    </div>
+    <div class="pfoot">
+      <div><div class="n">Mise à Jour Voyage</div><div class="a">Ilot 06, Ben Ramdhane — Draria, Alger</div></div>
+      <div class="cts"><div class="ct"><b>0777 777 725</b></div><div class="ct">miseajourvoyage@gmail.com</div><div class="ct">www.miseajourvoyage.com</div></div>
+    </div>
+    <div class="pgen">Généré le 30 Avr 2026 — Confirmation électronique.</div>
+  </div></div>
+</div>
+
+<!-- 4. MARITIME -->
+<div class="panel" id="p-maritime">
+  <div class="passwrap"><div class="pass">
+    <div class="ptop">
+      <div class="pbar">
+        <div class="plogo"><div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div></div>
+        <div class="ptype">Maritime</div>
+      </div>
+      <div class="proute">
+        <div class="pe"><div class="pcity">ALG</div><div class="ptm">18:00</div><div class="pap">Port d'Alger</div></div>
+        <div class="pmid"><div class="pdur">20h 00min</div><div class="pl"><div class="b"></div><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M5 16l2-7h10l2 7M9 9V6h6v3M11 6V4h2v2"/></svg><div class="b"></div></div><div class="pap" style="opacity:.75">Par mer</div></div>
+        <div class="pe r"><div class="pcity">MRS</div><div class="ptm">14:00<sup>+1</sup></div><div class="pap">Marseille</div></div>
+      </div>
+    </div>
+    <div class="perf"><span class="cut l"></span><span class="dash"></span><span class="cut r"></span></div>
+    <div class="pbody">
+      <div class="pfields">
+        <div class="fld full"><div class="k">Passager</div><div class="v">Feddal Samia</div></div>
+        <div class="fld"><div class="k">Billet No.</div><div class="v mono">MAR-7734291085</div></div>
+        <div class="fld"><div class="k">Navire</div><div class="v">Djazaïr II</div></div>
+        <div class="fld"><div class="k">Cabine</div><div class="v">C-214<span class="cbadge">Confort</span></div></div>
+        <div class="fld"><div class="k">Pont</div><div class="v">Pont 4 — Sup.</div></div>
+        <div class="fld"><div class="k">Repas</div><div class="v">Demi-pension</div></div>
+        <div class="fld"><div class="k">Bagages</div><div class="v">40 kg / pers.</div></div>
+        <div class="fld"><div class="k">Véhicule</div><div class="v">Sans véhicule</div></div>
+      </div>
+      <div class="pqr">
+        <div><div class="k">Référence (PNR)</div><div class="pnr">SEA4XK</div></div>
+        <div class="pright"><div class="k">Prix total</div><div class="price">18 500 DZD</div></div>
+      </div>
+    </div>
+    <div class="pfoot">
+      <div><div class="n">Mise à Jour Voyage</div><div class="a">Ilot 06, Ben Ramdhane — Draria, Alger</div></div>
+      <div class="cts"><div class="ct"><b>0777 777 725</b></div><div class="ct">miseajourvoyage@gmail.com</div><div class="ct">www.miseajourvoyage.com</div></div>
+    </div>
+    <div class="pgen">Généré le 30 Avr 2026 — Confirmation électronique.</div>
+  </div></div>
+</div>
+
+<!-- 5. 2 PASSAGERS -->
+<div class="panel" id="p-multi">
+  <div class="passwrap"><div class="pass">
+    <div class="ptop">
+      <div class="pbar">
+        <div class="plogo"><div class="mk"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#fff"/></svg></div><div><div class="n">Mise à Jour Voyage</div><div class="s">Agence de Voyages</div></div></div>
+        <div class="ptype">A-R · 2 Pax</div>
+      </div>
+      <div class="plegs">
+        <div class="pleg"><div class="ends"><b>ALG</b><span>09:45</span><i>→</i><b>IST</b><span>15:20</span></div><div class="meta">Aller · 28 Avr · Air Algérie AH 3016 · 2 adultes</div></div>
+        <div class="pleg"><div class="ends"><b>IST</b><span>01:40</span><i>→</i><b>ALG</b><span>03:10</span></div><div class="meta">Retour · 30 Avr · Air Algérie AH 3015 · 2 adultes</div></div>
+      </div>
+    </div>
+    <div class="perf"><span class="cut l"></span><span class="dash"></span><span class="cut r"></span></div>
+    <div class="pbody">
+      <div class="pfields">
+        <div class="fld"><div class="k">Passager 1</div><div class="v">M. Mohamed Titi</div><div class="v mono" style="font-size:11px;margin-top:2px;color:var(--muted)">124-2444383253</div></div>
+        <div class="fld"><div class="k">Passager 2</div><div class="v">Mme Fatiha Djaafri</div><div class="v mono" style="font-size:11px;margin-top:2px;color:var(--muted)">124-2444383252</div></div>
+        <div class="fld"><div class="k">Cabine</div><div class="v">Economy</div></div>
+        <div class="fld"><div class="k">Bagages</div><div class="v">2 PC / pers.</div></div>
+        <div class="fld"><div class="k">Prix / passager</div><div class="v">48 000 DZD</div></div>
+        <div class="fld"><div class="k">Émission</div><div class="v">25 Mar 2026</div></div>
+      </div>
+      <div class="pqr">
+        <div><div class="k">Référence (PNR)</div><div class="pnr">YZD4CK</div></div>
+        <div class="pright"><div class="k">Prix total (×2)</div><div class="price">96 000 DZD</div></div>
+      </div>
+    </div>
+    <div class="pfoot">
+      <div><div class="n">Mise à Jour Voyage</div><div class="a">Ilot 06, Ben Ramdhane — Draria, Alger</div></div>
+      <div class="cts"><div class="ct"><b>0777 777 725</b></div><div class="ct">miseajourvoyage@gmail.com</div><div class="ct">www.miseajourvoyage.com</div></div>
+    </div>
+    <div class="pgen">Généré le 30 Avr 2026 — Confirmation électronique.</div>
+  </div></div>
+</div>
+
+</div>
+
+<script>
+function sw(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('p-'+id).classList.add('active');
+}
+function theme(c1,c2){
+  const r=document.documentElement.style;
+  r.setProperty('--brand',c1); r.setProperty('--brand-2',c2);
+}
+</script>
+</body>
+</html>

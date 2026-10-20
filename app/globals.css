@@ -1,0 +1,284 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Brand palette */
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-parchment: var(--parchment);
+  --color-parchment-deep: var(--parchment-deep);
+  --color-horizon: var(--horizon);
+  --color-horizon-deep: var(--horizon-deep);
+  --color-sunset: var(--sunset);
+  --color-sunset-soft: var(--sunset-soft);
+  --color-tide: var(--tide);
+  --color-tide-soft: var(--tide-soft);
+  --color-thread: var(--thread);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Brand palette — logo-derived: navy "T" frame + coral swoosh accent */
+  --brand: oklch(0.66 0.20 33);                 /* coral swoosh — accent + CTA */
+  --brand-soft: oklch(0.955 0.038 40);          /* coral wash */
+  --navy: oklch(0.34 0.10 266);                 /* deep navy — the "T" */
+  --navy-deep: oklch(0.24 0.075 266);           /* deeper navy */
+  --parchment: oklch(0.992 0.004 60);           /* barely-warm near-white */
+  --parchment-deep: oklch(0.972 0.006 60);      /* subtle warm panel */
+  --ink: oklch(0.27 0.055 266);                 /* navy-ink text */
+  --ink-soft: oklch(0.44 0.045 266);            /* faded navy */
+  --horizon: oklch(0.50 0.13 266);              /* mid navy-blue */
+  --horizon-deep: oklch(0.34 0.10 266);         /* deep navy-blue */
+  --sunset: oklch(0.74 0.135 62);               /* amber — Draft status only */
+  --sunset-soft: oklch(0.92 0.06 78);           /* amber wash */
+  --tide: oklch(0.56 0.11 248);                 /* secondary blue accent */
+  --tide-soft: oklch(0.93 0.03 250);            /* light blue wash */
+  --thread: oklch(0.91 0.008 60);               /* hairline divider */
+
+  /* shadcn semantic mapping */
+  --background: var(--parchment);
+  --foreground: var(--ink);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--ink);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--parchment-deep);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.968 0.005 60);
+  --muted-foreground: oklch(0.52 0.035 266);
+  --accent: var(--brand-soft);
+  --accent-foreground: oklch(0.50 0.18 33);
+  --destructive: oklch(0.58 0.20 25);
+  --border: var(--thread);
+  --input: oklch(0.90 0.008 60);
+  --ring: var(--brand);
+
+  --chart-1: var(--brand);
+  --chart-2: var(--horizon);
+  --chart-3: var(--tide);
+  --chart-4: var(--sunset);
+  --chart-5: var(--ink-soft);
+
+  --radius: 0.75rem;
+
+  --sidebar: oklch(0.22 0.07 266);
+  --sidebar-foreground: oklch(0.93 0.012 266);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.30 0.075 266);
+  --sidebar-accent-foreground: oklch(0.98 0.004 60);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: var(--brand);
+}
+
+.dark {
+  --brand: oklch(0.70 0.18 35);                 /* coral, brighter for dark */
+  --brand-soft: oklch(0.34 0.09 35);            /* deep coral wash */
+  --navy: oklch(0.46 0.11 266);
+  --navy-deep: oklch(0.30 0.085 266);
+  --parchment: oklch(0.17 0.025 266);           /* near-black navy */
+  --parchment-deep: oklch(0.21 0.030 266);
+  --ink: oklch(0.96 0.008 60);
+  --ink-soft: oklch(0.78 0.015 60);
+  --horizon: oklch(0.62 0.13 266);
+  --horizon-deep: oklch(0.46 0.10 266);
+  --sunset: oklch(0.78 0.14 62);
+  --sunset-soft: oklch(0.32 0.08 60);
+  --tide: oklch(0.64 0.10 248);
+  --tide-soft: oklch(0.30 0.05 250);
+  --thread: oklch(1 0 0 / 8%);
+
+  --background: var(--parchment);
+  --foreground: var(--ink);
+  --card: oklch(0.22 0.030 266);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.22 0.030 266);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: oklch(0.18 0.02 35);
+  --secondary: oklch(0.27 0.034 266);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.27 0.034 266);
+  --muted-foreground: oklch(0.74 0.02 60);
+  --accent: oklch(0.32 0.07 35);
+  --accent-foreground: oklch(0.85 0.12 40);
+  --destructive: oklch(0.68 0.20 25);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: var(--brand);
+
+  --sidebar: oklch(0.14 0.025 266);
+  --sidebar-foreground: oklch(0.92 0.012 266);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(at 78% -12%, oklch(0.90 0.07 40 / 0.45) 0px, transparent 50%),
+      radial-gradient(at 12% -8%, oklch(0.88 0.05 266 / 0.45) 0px, transparent 52%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(at 78% -12%, oklch(0.45 0.12 35 / 0.30) 0px, transparent 52%),
+      radial-gradient(at 12% -8%, oklch(0.32 0.08 266 / 0.55) 0px, transparent 55%);
+  }
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ============================================
+   Travel-themed utility components
+   ============================================ */
+
+@layer components {
+  /* Eyebrow / overline label */
+  .eyebrow {
+    @apply text-[10px] uppercase tracking-[0.18em] font-medium font-mono text-muted-foreground;
+  }
+
+  /* Ticket editor: field labels recede so the entered data reads first */
+  .ticket-form [data-slot="form-label"] {
+    @apply text-[10px] font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground;
+  }
+
+  /* Section title in editorial serif — the kept "subtle hint" */
+  .display {
+    font-family: var(--font-display);
+    @apply tracking-tight;
+    font-feature-settings: "ss01", "cv11", "lnum";
+  }
+
+  /* Clean elevated card */
+  .paper {
+    @apply bg-card rounded-xl border border-border;
+    box-shadow:
+      0 1px 2px 0 oklch(0.24 0.075 266 / 0.05),
+      0 8px 24px -16px oklch(0.24 0.075 266 / 0.14);
+  }
+  .dark .paper {
+    box-shadow: 0 8px 24px -16px oklch(0 0 0 / 0.6);
+  }
+
+  /* Boarding alias — now just a clean card */
+  .boarding {
+    @apply relative bg-card rounded-xl border border-border;
+    box-shadow:
+      0 1px 2px 0 oklch(0.24 0.075 266 / 0.05),
+      0 12px 32px -20px oklch(0.24 0.075 266 / 0.20);
+  }
+
+  /* Status pill */
+  .stamp {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium text-[11px] tracking-tight border;
+  }
+
+  /* Plain hairline rule (de-skeuomorphized) */
+  .horizon-rule {
+    height: 1px;
+    @apply bg-border;
+    opacity: 1;
+  }
+
+  /* Flightpath alias — plain hairline, no animation */
+  .flightpath {
+    @apply bg-border;
+  }
+
+  /* Coral swoosh accent — the logo motif as a short underline */
+  .swoosh {
+    height: 3px;
+    width: 2.75rem;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      var(--brand) 0%,
+      oklch(0.74 0.16 45) 100%
+    );
+  }
+
+  /* Grain overlay — neutralized */
+  .grain::before { content: none; }
+
+  /* Subtle entrance */
+  .reveal {
+    animation: reveal 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Plane icon nudge animation */
+  .nudge-right { transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .group:hover .nudge-right { transform: translateX(3px); }
+
+  /* Compass alias — static (de-skeuomorphized) */
+  .compass { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; }
+}

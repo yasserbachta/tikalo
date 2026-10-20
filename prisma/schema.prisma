@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ─────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  AGENCY_ADMIN
+}
+
+enum AgencyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AgencyPlan {
+  TRIAL
+  PREMIUM
+}
+
+enum TicketStatus {
+  DRAFT
+  CONFIRMED
+  EXPORTED
+}
+
+enum ExtractionStatus {
+  PROCESSING
+  EXTRACTED
+  FAILED
+}
+
+enum PdfTemplate {
+  CLASSIC
+  EDITORIAL
+  PREMIUM
+  BOLD
+  WALLET
+  TIMELINE
+}
+
+// ─── AuthJS Adapter Models ─────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User ──────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(AGENCY_ADMIN)
+  // Bumped to force-invalidate all of this user's JWT sessions. The jwt callback
+  // compares the value stamped on the token against this; a mismatch logs out.
+  tokenVersion  Int       @default(0)
+  agencyId      String?
+
+  agency   Agency?   @relation(fields: [agencyId], references: [id])
+  accounts Account[]
+  sessions Session[]
+
+  ticketsCreated    Ticket[]        @relation("TicketCreatedBy")
+  versionsConfirmed TicketVersion[] @relation("VersionConfirmedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Agency ────────────────────────────────────────────
+
+model Agency {
+  id             String  @id @default(cuid())
+  name           String
+  email          String  @unique
+  slug           String  @unique
+  logoPath       String?
+  slogan         String? @default("rester a jour")
+  primaryColor   String  @default("#1a2d5a")
+  secondaryColor String  @default("#f0f2f5")
+
+  // PDF ticket template selection. primaryColor/secondaryColor stay in use for
+  // the CLASSIC template; the other templates ignore those and use the palette
+  // catalog (lib/tickets/templates/palettes.ts) keyed by pdfPaletteKey.
+  pdfTemplate   PdfTemplate @default(CLASSIC)
+  pdfPaletteKey String      @default("default")
+
+  // Feature flag: maritime tickets are edited in the in-browser PDF editor
+  // (TicketVersion.pdfEdits) instead of the automatic price overlay. Also
+  // gated globally by the MARITIME_PDF_EDITOR env kill switch — see
+  // lib/feature-flags.ts.
+  maritimeEditorEnabled Boolean @default(false)
+
+  contactPhone   String?
+  contactEmail   String?
+  contactWebsite String?
+  addressLine1   String?
+  addressLine2   String?
+
+  status    AgencyStatus @default(ACTIVE)
+
+  // Billing tier. TRIAL agencies may upload at most TRIAL_UPLOAD_LIMIT PDFs
+  // (lib/tickets/upload-constants.ts); PREMIUM lifts that cap. Self-signups start
+  // on TRIAL; a super-admin can flip the plan. trialUploadsUsed is a lifetime
+  // monotonic counter — deleting tickets never frees a slot.
+  plan             AgencyPlan @default(TRIAL)
+  trialUploadsUsed Int        @default(0)
+
+  // After this instant the agency can no longer upload tickets. Carried in the
+  // NextAuth JWT (session.user.agencyExpiry) so the upload guard needs no DB
+  // lookup. Null = no expiry.
+  expiryDate DateTime?
+  // Bookkeeping only: how much this agency has paid, whole currency units.
+  amountPaid Int?
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  users   User[]
+  tickets Ticket[]
+}
+
+// ─── Ticket ────────────────────────────────────────────
+
+model Ticket {
+  id        String       @id @default(cuid())
+  reference String?
+  status    TicketStatus @default(DRAFT)
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("TicketCreatedBy", fields: [createdById], references: [id])
+
+  versions TicketVersion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([createdById])
+}
+
+// ─── Ticket Version ────────────────────────────────────
+
+model TicketVersion {
+  id                  String  @id @default(cuid())
+  ticketId            String
+  versionNumber       Int     @default(1)
+  isLatest            Boolean @default(true)
+  originalFileName    String
+  originalStoragePath String
+  fileSize            Int
+
+  extractedData    Json?
+  extractionStatus ExtractionStatus @default(PROCESSING)
+  modelUsed        String?
+  wasRetried       Boolean          @default(false)
+  processingMs     Int?
+
+  confirmedData    Json?
+  // Maritime PDF editor: text replacements the agent made on the original
+  // carrier PDF (shape: lib/tickets/pdf-edits.ts). Applied at export only when
+  // the maritime editor flag is on; ignored (but kept) otherwise.
+  pdfEdits         Json?
+  generatedPdfPath String?
+  exportedAt       DateTime?
+  confirmedAt      DateTime?
+
+  confirmedById String?
+  confirmedBy   User?   @relation("VersionConfirmedBy", fields: [confirmedById], references: [id])
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}

@@ -1,0 +1,182 @@
+# CI — the single gate before a production deploy.
+#
+# lint / typecheck / test / build / security run in parallel on every push to
+# master and every pull request. `deploy` runs only after all five pass, and
+# only on push to master. Vercel's own git auto-deploy is disabled in
+# vercel.json so THIS workflow is the only thing that ships to production.
+#
+# One-time repo secrets to configure (Settings → Secrets and variables → Actions)
+# for the deploy job:
+#   VERCEL_TOKEN        — a Vercel access token (Account Settings → Tokens)
+#   VERCEL_ORG_ID       — from `.vercel/project.json` after `vercel link`
+#   VERCEL_PROJECT_ID   — from `.vercel/project.json` after `vercel link`
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on a branch/PR — but never cancel a master run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+# Dummy, non-secret values so app modules that read env at import/build time
+# don't throw under CI. The real deploy uses Vercel's project env, not these.
+env:
+  AUTH_SECRET: ci-test-secret-not-used
+  AUTH_URL: http://localhost:3000
+  SUPER_ADMIN_EMAIL: admin@tikalo.test
+  OPENAI_API_KEY: ci-openai-key
+  BUNNY_STORAGE_ZONE_NAME: ci-zone
+  BUNNY_STORAGE_API_KEY: ci-bunny-key
+  NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID: "0"
+  BUNNY_STREAM_API_KEY: ci-bunny-stream-key
+  NEXT_PUBLIC_BUNNY_CDN_HOSTNAME: ci.b-cdn.net
+  NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+  SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+  RESEND_API_KEY: ci-resend-key
+  EMAIL_FROM: noreply@tikalo.test
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # eslint-config-next's type-aware rules need the generated Prisma client.
+      - run: npx prisma generate
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsc --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tikalo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tikalo_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # localhost satisfies the global-setup guard rail; the suite resets this
+      # disposable service DB, never a real one.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tikalo_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tikalo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tikalo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tikalo_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tikalo_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tikalo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      # Some pages touch Prisma at build time, so give them a real schema.
+      - run: npx prisma db push --skip-generate
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - run: npm run build # next build --webpack
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Blocking: fail the gate on a critical-severity advisory.
+      - name: Audit (critical, blocking)
+        run: npm audit --audit-level=critical
+      # Informational: full report, never fails the job.
+      - name: Audit (full, informational)
+        run: npm audit || true
+
+  deploy:
+    needs: [lint, typecheck, test, build, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Build ON Vercel (not --prebuilt): Prisma's query engine must be compiled
+      # for Vercel's runtime (rhel-openssl), not this Ubuntu runner.
+      - name: Deploy to Vercel (production)
+        run: npx vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
